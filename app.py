@@ -1,11 +1,10 @@
 import streamlit as st
 import json
 import os
-import pandas as pd
 from kaggle.api.kaggle_api_extended import KaggleApi
 
 # ==========================================
-# 1. KONFIGURASI TAMPILAN & CSS KUSTOM (TRANSPARAN FULL)
+# 1. KONFIGURASI TAMPILAN & CSS KUSTOM
 # ==========================================
 st.set_page_config(page_title="AI Kopilot", page_icon="🔮", layout="wide")
 
@@ -13,12 +12,12 @@ st.markdown("""
     <style>
     @import url('https://fonts.googleapis.com/css2?family=Alice&display=swap');
     
-    /* Background Utama bertema Pemandangan Laut & Langit Magenta */
+    /* Background Utama Bertema Pemandangan Laut & Langit Magenta */
     .stApp {
         background: linear-gradient(180deg, #4a154b 0%, #2b1055 40%, #75225b 70%, #1a0826 100%);
         background-attachment: fixed;
-        font-family: 'Alice', serif;
-        color: #FFFFFF;
+        font-family: 'Alice', serif !important;
+        color: #FFFFFF !important;
     }
     
     /* Font Alice untuk Seluruh Teks */
@@ -27,49 +26,54 @@ st.markdown("""
         color: #FFFFFF !important;
     }
     
-    /* Hapus Latar Belakang Putih & Buat Semua Kotak Hanya Berupa Garis Pinggir Putih Transparan */
+    /* Hapus Latar Putih Kompleks: Buat Semua Input & Box Hanya Outline Garis Pinggir Putih */
     div[data-baseweb="input"], 
     div[data-baseweb="base-input"],
     textarea,
     .stTextInput input,
     .stTextArea textarea,
     div[data-baseweb="select"] > div {
-        background-color: rgba(255, 255, 255, 0.05) !important;
-        background: rgba(255, 255, 255, 0.05) !important;
-        border: 1px solid rgba(255, 255, 255, 0.4) !important;
+        background-color: transparent !important;
+        background: transparent !important;
+        border: 1px solid rgba(255, 255, 255, 0.6) !important;
         border-radius: 8px !important;
         color: #FFFFFF !important;
-        backdrop-filter: none !important;
+    }
+
+    /* Hilangkan background putih pada popover, dialog, dan expander */
+    div[data-testid="stPopover"] > button,
+    .stButton > button {
+        background-color: transparent !important;
+        background: transparent !important;
+        border: 1px solid rgba(255, 255, 255, 0.6) !important;
+        border-radius: 8px !important;
+        color: #FFFFFF !important;
     }
     
-    /* Tombol Transparan dengan Outline Putih */
-    .stButton > button, div[data-testid="stPopover"] > button {
-        background-color: rgba(255, 255, 255, 0.05) !important;
-        background: rgba(255, 255, 255, 0.05) !important;
-        border: 1px solid rgba(255, 255, 255, 0.5) !important;
-        border-radius: 8px !important;
-        color: #FFFFFF !important;
-        backdrop-filter: none !important;
-    }
     .stButton > button:hover, div[data-testid="stPopover"] > button:hover {
         border-color: #FFFFFF !important;
         background-color: rgba(255, 255, 255, 0.15) !important;
     }
 
-    /* Style Header Sapaan & Kotak Huruf Transparan */
+    /* Style Header Selamat Datang di Tengah & Spasi Antar Kata */
     .welcome-container {
         text-align: center;
-        padding: 10px 0 20px 0;
+        width: 100%;
+        margin: 0 auto 20px auto;
     }
-    .grid-sapaan {
-        display: flex;
-        flex-wrap: wrap;
-        justify-content: center;
+    .welcome-title {
+        font-size: 42px;
+        font-weight: bold;
+        text-align: center;
+        margin-bottom: 20px;
+    }
+    .word-group {
+        display: inline-flex;
         gap: 6px;
-        margin-top: 15px;
+        margin: 0 14px; /* Memberikan Spasi Nyata Antar Kata */
     }
     .letter-box {
-        border: 1.5px solid rgba(255, 255, 255, 0.8);
+        border: 1.5px solid rgba(255, 255, 255, 0.85);
         background: transparent !important;
         border-radius: 8px;
         padding: 6px 12px;
@@ -81,8 +85,8 @@ st.markdown("""
     
     /* Area Catatan Utama Transparan */
     .main-editor-card {
-        background: rgba(255, 255, 255, 0.03);
-        border: 1px solid rgba(255, 255, 255, 0.3);
+        background: transparent;
+        border: 1px solid rgba(255, 255, 255, 0.4);
         border-radius: 12px;
         padding: 20px;
         margin-bottom: 20px;
@@ -90,19 +94,23 @@ st.markdown("""
     
     /* Kotak Jawaban AI Transparan */
     .ai-box {
-        background: rgba(255, 255, 255, 0.05);
-        border: 1px solid rgba(255, 255, 255, 0.3);
+        background: transparent;
+        border: 1px solid rgba(255, 255, 255, 0.4);
         border-left: 4px solid #d8b4fe;
         border-radius: 8px;
         padding: 14px;
         margin: 10px 0;
     }
     
-    /* Sidebar Transparan */
+    /* Sidebar Transparan Tanpa Icon Bug */
     section[data-testid="stSidebar"] {
-        background-color: rgba(10, 5, 20, 0.6) !important;
+        background-color: rgba(15, 5, 25, 0.5) !important;
         border-right: 1px solid rgba(255, 255, 255, 0.2);
-        backdrop-filter: none !important;
+    }
+    
+    /* Sembunyikan teks sistem ekspander yang rusak */
+    summary div p {
+        display: inline-block;
     }
     </style>
 """, unsafe_allow_html=True)
@@ -154,19 +162,23 @@ def load_kaggle_manifest():
                 data.append(json.loads(line.strip()))
         return data, "✔ Terhubung ke Kaggle Master Registry"
     except Exception as e:
-        return [], f"⚠ Offline / Standalone Mode: {str(e)}"
+        return [], f"⚠ Standalone Mode: {str(e)}"
 
 manifest_tools, status_sys = load_kaggle_manifest()
 
 # ==========================================
-# 4. SIDEBAR NAVIGASI CLEAN
+# 4. SIDEBAR NAVIGASI RAPI & BERSIH
 # ==========================================
 with st.sidebar:
-    st.title("Navigasi")
+    st.subheader("Navigasi")
     
-    # --- OBROLAN ---
-    with st.expander("Obrolan", expanded=True):
-        if st.button("Obrolan Baru", use_container_width=True):
+    # Mode Pilihan Menu Utama
+    menu_choice = st.radio("Menu Utama", ["Obrolan", "Diary", "Project"], index=0)
+    
+    st.divider()
+
+    if menu_choice == "Obrolan":
+        if st.button("➕ Obrolan Baru", use_container_width=True):
             new_id = f"chat_{len(st.session_state.chats)+1}"
             st.session_state.chats[new_id] = {"title": f"Obrolan {len(st.session_state.chats)+1}", "messages": [], "memory": [], "media": []}
             st.session_state.active_id = new_id
@@ -174,14 +186,13 @@ with st.sidebar:
             st.rerun()
             
         for cid, cdata in list(st.session_state.chats.items()):
-            if st.button(f"{cdata['title']}", key=f"btn_{cid}", use_container_width=True):
+            if st.button(f"💬 {cdata['title']}", key=f"btn_{cid}", use_container_width=True):
                 st.session_state.active_id = cid
                 st.session_state.current_view = "obrolan"
                 st.rerun()
 
-    # --- DIARY ---
-    with st.expander("Diary", expanded=False):
-        if st.button("Diary Baru", use_container_width=True):
+    elif menu_choice == "Diary":
+        if st.button("➕ Diary Baru", use_container_width=True):
             new_id = f"diary_{len(st.session_state.diaries)+1}"
             st.session_state.diaries[new_id] = {"title": f"Diary {len(st.session_state.diaries)+1}", "content": "", "messages": [], "memory": [], "media": []}
             st.session_state.active_id = new_id
@@ -189,22 +200,21 @@ with st.sidebar:
             st.rerun()
             
         for did, ddata in list(st.session_state.diaries.items()):
-            if st.button(f"{ddata['title']}", key=f"btn_{did}", use_container_width=True):
+            if st.button(f"📖 {ddata['title']}", key=f"btn_{did}", use_container_width=True):
                 st.session_state.active_id = did
                 st.session_state.current_view = "diary"
                 st.rerun()
 
-    # --- PROJECT ---
-    with st.expander("Project", expanded=False):
-        if st.button("Project Baru", use_container_width=True):
+    else:
+        if st.button("➕ Project Baru", use_container_width=True):
             new_id = f"proj_{len(st.session_state.projects)+1}"
-            st.session_state.projects[new_id] = {"title": f"Proyek {len(st.session_state.projects)+1}", "content": "", "messages": [], "memory": [], "media": []}
+            st.session_state.projects[new_id] = {"title": f"Proyek {len(st.session_state.projects)+1}", "content": "", "messages": [], "memory": [], "memory": [], "media": []}
             st.session_state.active_id = new_id
             st.session_state.current_view = "project"
             st.rerun()
             
         for pid, pdata in list(st.session_state.projects.items()):
-            if st.button(f"{pdata['title']}", key=f"btn_{pid}", use_container_width=True):
+            if st.button(f"🚀 {pdata['title']}", key=f"btn_{pid}", use_container_width=True):
                 st.session_state.active_id = pid
                 st.session_state.current_view = "project"
                 st.rerun()
@@ -212,10 +222,10 @@ with st.sidebar:
     st.divider()
 
     # --- CARI DALAM SEMUA ---
-    with st.expander("Cari Dalam Semua"):
+    with st.popover("🔍 Cari Dalam Semua"):
         search_query = st.text_input("Cari kata kunci...", key="global_search")
         if search_query:
-            st.caption(f"Hasil pencarian: **{search_query}**")
+            st.caption(f"Hasil pencarian untuk: **{search_query}**")
             for cid, c in st.session_state.chats.items():
                 if any(search_query.lower() in m["content"].lower() for m in c["messages"]):
                     st.write(f"• [Obrolan] {c['title']}")
@@ -223,8 +233,8 @@ with st.sidebar:
                 if search_query.lower() in d["content"].lower():
                     st.write(f"• [Diary] {d['title']}")
 
-    # --- GLOSARIUM ---
-    with st.expander("Glosarium Istilah"):
+    # --- GLOSARIUM ISTILAH ---
+    with st.popover("📚 Glosarium Istilah"):
         g_search = st.text_input("Cari Istilah...", key="g_search")
         for k, v in st.session_state.glosarium.items():
             if not g_search or g_search.lower() in k.lower() or g_search.lower() in v.lower():
@@ -232,37 +242,45 @@ with st.sidebar:
                 st.caption(v)
 
     # --- KINERJA AI ---
-    with st.expander("Kinerja AI"):
+    with st.popover("⚡ Kinerja AI"):
         st.caption(status_sys)
         st.metric("Total Master Tools", len(manifest_tools))
         st.metric("Latensi Sistem", "12 ms")
         st.metric("Status GPU", "Tesla T4 Ready")
 
 # ==========================================
-# 5. SAPAAN UTAMA KUSTOM (PRESISI EXAK)
+# 5. SAPAAN UTAMA (PRESISI TENGAH & SPASI KATA)
 # ==========================================
 st.markdown('<div class="welcome-container">', unsafe_allow_html=True)
-st.markdown("<h1>Selamat datang!</h1>", unsafe_allow_html=True)
+st.markdown('<div class="welcome-title">Selamat datang!</div>', unsafe_allow_html=True)
 
-# 4 tombol Dear + 12 tombol Affectionate + 1 tombol Fairmindedness
+# Pembagian Tepat Kata dengan Spasi Nyata Antar Kelompok Kata
 dear_words = ["D", "e", "a", "r"]
 affectionate_words = ["A", "f", "f", "e", "c", "t", "i", "o", "n", "a", "t", "e"]
 fairmindedness_word = "Fairmindedness"
 
-grid_html = '<div class="grid-sapaan">'
-# 4 tombol Dear
+html_content = '<div style="text-align: center;">'
+
+# Kelompok Kata 1: Dear
+html_content += '<div class="word-group">'
 for w in dear_words:
-    grid_html += f'<div class="letter-box">{w}</div>'
+    html_content += f'<div class="letter-box">{w}</div>'
+html_content += '</div>'
 
-# 12 tombol Affectionate
+# Kelompok Kata 2: Affectionate
+html_content += '<div class="word-group">'
 for w in affectionate_words:
-    grid_html += f'<div class="letter-box">{w}</div>'
+    html_content += f'<div class="letter-box">{w}</div>'
+html_content += '</div>'
 
-# 1 tombol Fairmindedness
-grid_html += f'<div class="letter-box">{fairmindedness_word}</div>'
-grid_html += '</div>'
+# Kelompok Kata 3: Fairmindedness
+html_content += '<div class="word-group">'
+html_content += f'<div class="letter-box">{fairmindedness_word}</div>'
+html_content += '</div>'
 
-st.markdown(grid_html, unsafe_allow_html=True)
+html_content += '</div>'
+
+st.markdown(html_content, unsafe_allow_html=True)
 st.markdown('</div>', unsafe_allow_html=True)
 st.divider()
 
@@ -322,7 +340,7 @@ if current_view in ["diary", "project"]:
     active_data["content"] = content_input
     st.markdown('</div>', unsafe_allow_html=True)
 
-    with st.expander("Asisten AI Kopilot (Klik untuk Buka/Tutup Perintah & Riwayat)", expanded=False):
+    with st.popover("🤖 Perintah & Riwayat Asisten AI"):
         st.info("Ajukan perintah ke AI untuk membantu mengedit, merangkum, atau menganalisis catatan di atas.")
 
 # ==========================================
