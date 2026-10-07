@@ -4,7 +4,7 @@ import os
 from kaggle.api.kaggle_api_extended import KaggleApi
 
 # ==========================================
-# 1. KONFIGURASI TAMPILAN & CSS PURE OUTLINE
+# 1. KONFIGURASI TAMPILAN & CSS PURE TRANSPARENT OUTLINE
 # ==========================================
 st.set_page_config(page_title="AI Kopilot", page_icon="🔮", layout="wide")
 
@@ -26,25 +26,49 @@ st.markdown("""
         color: #FFFFFF !important;
     }
 
-    /* Paksa Semua Input & Textarea Murni Transparan Tanpa Latar Belakang Putih */
+    /* 1. PAKSA TOTAL SEMUA TEXT INPUT, TEXTAREA, DAN FILE UPLOADER MENJADI OUTLINE TRANSPARAN */
     div[data-baseweb="input"], 
     div[data-baseweb="base-input"],
-    textarea,
+    div[data-baseweb="textarea"],
     .stTextInput input,
-    .stTextArea textarea {
+    .stTextArea textarea,
+    input[type="text"],
+    section[data-testid="stFileUploaderDropzone"],
+    div[data-testid="stFileUploader"] {
         background-color: transparent !important;
         background: transparent !important;
-        border: 1.5px solid rgba(255, 255, 255, 0.7) !important;
+        border: 1.5px solid rgba(255, 255, 255, 0.75) !important;
         border-radius: 8px !important;
         color: #FFFFFF !important;
         box-shadow: none !important;
     }
 
-    /* Paksa Semua Tombol Bertipe Outline Transparan Murni */
+    /* 2. PAKSA TOTAL AREA CHAT INPUT BOTTOM BAR MENJADI OUTLINE TRANSPARAN */
+    div[data-testid="stChatInput"],
+    div[data-testid="stChatInput"] > div,
+    div[data-testid="stChatInput"] textarea,
+    div[data-testid="stChatInputContainer"] {
+        background-color: transparent !important;
+        background: transparent !important;
+        border: 1.5px solid rgba(255, 255, 255, 0.75) !important;
+        border-radius: 12px !important;
+        color: #FFFFFF !important;
+        box-shadow: none !important;
+    }
+    
+    /* Warna Teks Hint / Placeholder Dalam Input */
+    ::placeholder, 
+    .stTextInput input::placeholder, 
+    .stTextArea textarea::placeholder,
+    div[data-testid="stChatInput"] textarea::placeholder {
+        color: rgba(255, 255, 255, 0.65) !important;
+    }
+
+    /* 3. PAKSA SEMUA TOMBOL BERTIPE OUTLINE TRANSPARAN MURNI */
     .stButton > button {
         background-color: transparent !important;
         background: transparent !important;
-        border: 1.5px solid rgba(255, 255, 255, 0.7) !important;
+        border: 1.5px solid rgba(255, 255, 255, 0.75) !important;
         border-radius: 8px !important;
         color: #FFFFFF !important;
         backdrop-filter: none !important;
@@ -56,7 +80,7 @@ st.markdown("""
         background-color: rgba(255, 255, 255, 0.15) !important;
     }
 
-    /* Style Header Sapaan & Kotak Huruf Konsisten */
+    /* Header Sapaan & Kotak Huruf Konsisten */
     .welcome-container {
         text-align: center;
         width: 100%;
@@ -80,13 +104,13 @@ st.markdown("""
         background: transparent !important;
         border-radius: 8px;
         padding: 6px 14px;
-        font-size: 17px !important; /* Ukuran Font Konsisten untuk Semua Kotak */
+        font-size: 17px !important;
         font-weight: bold;
         color: #FFFFFF;
         display: inline-block;
     }
 
-    /* Lembar Tulis & Panel Transparan */
+    /* Panel Lembar Tulis & Respon AI Transparan */
     .main-editor-card {
         background: transparent !important;
         border: 1.5px solid rgba(255, 255, 255, 0.5);
@@ -104,10 +128,15 @@ st.markdown("""
         margin: 10px 0;
     }
 
-    /* Sidebar Transparan Clean */
+    /* Sidebar Clean Transparan */
     section[data-testid="stSidebar"] {
         background-color: rgba(15, 5, 25, 0.5) !important;
         border-right: 1.5px solid rgba(255, 255, 255, 0.2);
+    }
+
+    /* Sembunyikan elemen header & kotak kosong yang tidak perlu */
+    header[data-testid="stHeader"] {
+        background: transparent !important;
     }
     </style>
 """, unsafe_allow_html=True)
@@ -122,7 +151,7 @@ if "active_id" not in st.session_state:
     st.session_state.active_id = "default"
 
 if "active_panel" not in st.session_state:
-    st.session_state.active_panel = None  # None, 'memory', 'media', 'search', 'glosarium', 'kinerja', 'ai'
+    st.session_state.active_panel = None
 
 if "chats" not in st.session_state:
     st.session_state.chats = {"default": {"title": "Obrolan Utama", "messages": [], "memory": [], "media": []}}
@@ -219,7 +248,6 @@ with st.sidebar:
 
     st.divider()
 
-    # Tombol Fitur Tambahan (Transparan Murni Tanpa Popover Bug)
     if st.button("🔍 Cari Dalam Semua", use_container_width=True):
         st.session_state.active_panel = "search" if st.session_state.active_panel != "search" else None
 
@@ -230,7 +258,7 @@ with st.sidebar:
         st.session_state.active_panel = "kinerja" if st.session_state.active_panel != "kinerja" else None
 
 # ==========================================
-# 5. SAPAAN UTAMA (PRESISI & SAMAKAN UKURAN FONT)
+# 5. SAPAAN UTAMA
 # ==========================================
 st.markdown('<div class="welcome-container">', unsafe_allow_html=True)
 st.markdown('<div class="welcome-title">Selamat datang!</div>', unsafe_allow_html=True)
@@ -253,7 +281,7 @@ for w in affectionate_words:
     html_content += f'<div class="letter-box">{w}</div>'
 html_content += '</div>'
 
-# Kelompok 3: Fairmindedness (Ukuran Font Sama 17px & Spasi Pas)
+# Kelompok 3: Fairmindedness
 html_content += '<div class="word-group" style="margin-top: 14px;">'
 html_content += f'<div class="letter-box">{fairmindedness_word}</div>'
 html_content += '</div>'
@@ -262,7 +290,6 @@ html_content += '</div>'
 
 st.markdown(html_content, unsafe_allow_html=True)
 st.markdown('</div>', unsafe_allow_html=True)
-st.divider()
 
 # Get Active Item Data
 current_view = st.session_state.current_view
@@ -293,7 +320,7 @@ with col_h3:
         st.session_state.active_panel = "media" if st.session_state.active_panel != "media" else None
 
 # ==========================================
-# 7. PANEL MODAL AKTIF (TRANSPARAN FULL)
+# 7. PANEL MODAL AKTIF (TRANSPARAN OUTLINE)
 # ==========================================
 if st.session_state.active_panel == "memory":
     with st.container():
