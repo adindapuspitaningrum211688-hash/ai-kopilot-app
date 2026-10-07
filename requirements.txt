@@ -1,0 +1,8 @@
+streamlit
+kaggle
+requests
+pandas
+pydantic
+sympy
+pymupdf
+python-docx
