@@ -4,7 +4,7 @@ import os
 from kaggle.api.kaggle_api_extended import KaggleApi
 
 # ==========================================
-# 1. KONFIGURASI TAMPILAN & CSS PENGHAPUS BACKGROUND PUTIH
+# 1. KONFIGURASI TAMPILAN & CSS PURE OUTLINE
 # ==========================================
 st.set_page_config(page_title="AI Kopilot", page_icon="🔮", layout="wide")
 
@@ -20,19 +20,18 @@ st.markdown("""
         color: #FFFFFF !important;
     }
     
-    /* Font Alice & Warna Putih Untuk Seluruh Komponen */
+    /* Font Alice untuk Seluruh Teks */
     h1, h2, h3, h4, h5, h6, p, div, span, label, input, textarea, button {
         font-family: 'Alice', serif !important;
         color: #FFFFFF !important;
     }
 
-    /* 1. Paksa Semua Input Text, Text Area, dan Box Menjadi Murni Transparan dengan Outline Putih */
+    /* Paksa Semua Input & Textarea Murni Transparan Tanpa Latar Belakang Putih */
     div[data-baseweb="input"], 
     div[data-baseweb="base-input"],
     textarea,
     .stTextInput input,
-    .stTextArea textarea,
-    div[data-baseweb="select"] > div {
+    .stTextArea textarea {
         background-color: transparent !important;
         background: transparent !important;
         border: 1.5px solid rgba(255, 255, 255, 0.7) !important;
@@ -41,42 +40,23 @@ st.markdown("""
         box-shadow: none !important;
     }
 
-    /* 2. Hapus Latar Belakang Putih Susu pada Popover (Tombol Memory, Media, & Search) */
-    div[data-testid="stPopover"],
-    div[data-testid="stPopover"] > button,
-    div[data-testid="stPopover"] > div {
-        background-color: transparent !important;
-        background: transparent !important;
-        border: 1.5px solid rgba(255, 255, 255, 0.7) !important;
-        border-radius: 8px !important;
-        color: #FFFFFF !important;
-        box-shadow: none !important;
-    }
-
-    /* 3. Hilangkan Teks Bug 'expand_more' dan Buat Tombol Hanya Garis Pinggir Putih */
-    button[data-testid="stBaseButton-popover"],
+    /* Paksa Semua Tombol Bertipe Outline Transparan Murni */
     .stButton > button {
         background-color: transparent !important;
         background: transparent !important;
         border: 1.5px solid rgba(255, 255, 255, 0.7) !important;
         border-radius: 8px !important;
         color: #FFFFFF !important;
+        backdrop-filter: none !important;
+        box-shadow: none !important;
     }
     
-    /* Hover Effect Tombol */
-    .stButton > button:hover, 
-    div[data-testid="stPopover"] > button:hover {
+    .stButton > button:hover {
         border-color: #FFFFFF !important;
         background-color: rgba(255, 255, 255, 0.15) !important;
     }
 
-    /* 4. Sembunyikan Ikon/Teks Bawaan Streamlit yang Merusak Tampilan */
-    span[data-testid="stHeaderActionElements"],
-    [data-testid="stIconMaterial"] {
-        color: #FFFFFF !important;
-    }
-
-    /* Header Sapaan & Tata Letak Kotak */
+    /* Style Header Sapaan & Kotak Huruf Konsisten */
     .welcome-container {
         text-align: center;
         width: 100%;
@@ -93,20 +73,20 @@ st.markdown("""
         flex-wrap: wrap;
         justify-content: center;
         gap: 8px;
-        margin: 6px 12px; /* Menambah Spasi Atas & Samping Agar Tidak Menempel */
+        margin: 8px 12px;
     }
     .letter-box {
         border: 1.5px solid rgba(255, 255, 255, 0.85);
         background: transparent !important;
         border-radius: 8px;
         padding: 6px 14px;
-        font-size: 17px;
+        font-size: 17px !important; /* Ukuran Font Konsisten untuk Semua Kotak */
         font-weight: bold;
         color: #FFFFFF;
         display: inline-block;
     }
 
-    /* Area Editor Lembar Tulis Transparan */
+    /* Lembar Tulis & Panel Transparan */
     .main-editor-card {
         background: transparent !important;
         border: 1.5px solid rgba(255, 255, 255, 0.5);
@@ -115,7 +95,16 @@ st.markdown("""
         margin-bottom: 20px;
     }
     
-    /* Sidebar Transparan */
+    .ai-box {
+        background: transparent !important;
+        border: 1.5px solid rgba(255, 255, 255, 0.4);
+        border-left: 4px solid #d8b4fe !important;
+        border-radius: 8px;
+        padding: 14px;
+        margin: 10px 0;
+    }
+
+    /* Sidebar Transparan Clean */
     section[data-testid="stSidebar"] {
         background-color: rgba(15, 5, 25, 0.5) !important;
         border-right: 1.5px solid rgba(255, 255, 255, 0.2);
@@ -131,6 +120,9 @@ if "current_view" not in st.session_state:
 
 if "active_id" not in st.session_state:
     st.session_state.active_id = "default"
+
+if "active_panel" not in st.session_state:
+    st.session_state.active_panel = None  # None, 'memory', 'media', 'search', 'glosarium', 'kinerja', 'ai'
 
 if "chats" not in st.session_state:
     st.session_state.chats = {"default": {"title": "Obrolan Utama", "messages": [], "memory": [], "media": []}}
@@ -178,9 +170,9 @@ manifest_tools, status_sys = load_kaggle_manifest()
 # 4. SIDEBAR NAVIGASI
 # ==========================================
 with st.sidebar:
-    st.subheader("Navigasi")
+    st.subheader("Menu Utama")
     
-    menu_choice = st.radio("Menu Utama", ["Obrolan", "Diary", "Project"], index=0)
+    menu_choice = st.radio("Pilih Tampilan", ["Obrolan", "Diary", "Project"], index=0, label_visibility="collapsed")
     st.divider()
 
     if menu_choice == "Obrolan":
@@ -227,35 +219,18 @@ with st.sidebar:
 
     st.divider()
 
-    # --- CARI DALAM SEMUA ---
-    with st.popover("🔍 Cari Dalam Semua"):
-        search_query = st.text_input("Cari kata kunci...", key="global_search")
-        if search_query:
-            st.caption(f"Hasil pencarian: **{search_query}**")
-            for cid, c in st.session_state.chats.items():
-                if any(search_query.lower() in m["content"].lower() for m in c["messages"]):
-                    st.write(f"• [Obrolan] {c['title']}")
-            for did, d in st.session_state.diaries.items():
-                if search_query.lower() in d["content"].lower():
-                    st.write(f"• [Diary] {d['title']}")
+    # Tombol Fitur Tambahan (Transparan Murni Tanpa Popover Bug)
+    if st.button("🔍 Cari Dalam Semua", use_container_width=True):
+        st.session_state.active_panel = "search" if st.session_state.active_panel != "search" else None
 
-    # --- GLOSARIUM ISTILAH ---
-    with st.popover("📚 Glosarium Istilah"):
-        g_search = st.text_input("Cari Istilah...", key="g_search")
-        for k, v in st.session_state.glosarium.items():
-            if not g_search or g_search.lower() in k.lower() or g_search.lower() in v.lower():
-                st.markdown(f"**{k}**")
-                st.caption(v)
+    if st.button("📚 Glosarium Istilah", use_container_width=True):
+        st.session_state.active_panel = "glosarium" if st.session_state.active_panel != "glosarium" else None
 
-    # --- KINERJA AI ---
-    with st.popover("⚡ Kinerja AI"):
-        st.caption(status_sys)
-        st.metric("Total Master Tools", len(manifest_tools))
-        st.metric("Latensi Sistem", "12 ms")
-        st.metric("Status GPU", "Tesla T4 Ready")
+    if st.button("⚡ Kinerja AI", use_container_width=True):
+        st.session_state.active_panel = "kinerja" if st.session_state.active_panel != "kinerja" else None
 
 # ==========================================
-# 5. SAPAAN UTAMA (PRESISI TENGAH & SPASI FAIRMINDEDNESS)
+# 5. SAPAAN UTAMA (PRESISI & SAMAKAN UKURAN FONT)
 # ==========================================
 st.markdown('<div class="welcome-container">', unsafe_allow_html=True)
 st.markdown('<div class="welcome-title">Selamat datang!</div>', unsafe_allow_html=True)
@@ -278,8 +253,8 @@ for w in affectionate_words:
     html_content += f'<div class="letter-box">{w}</div>'
 html_content += '</div>'
 
-# Kelompok 3: Fairmindedness (Diberikan spasi jarak khusus ke atas & samping)
-html_content += '<div class="word-group" style="margin-top: 12px;">'
+# Kelompok 3: Fairmindedness (Ukuran Font Sama 17px & Spasi Pas)
+html_content += '<div class="word-group" style="margin-top: 14px;">'
 html_content += f'<div class="letter-box">{fairmindedness_word}</div>'
 html_content += '</div>'
 
@@ -301,7 +276,7 @@ else:
     active_data = st.session_state.projects.get(active_id, list(st.session_state.projects.values())[0])
 
 # ==========================================
-# 6. HEADER UTAMA: RENAME, MEMORY & MEDIA
+# 6. HEADER UTAMA & TOMBOL PANEL FITUR
 # ==========================================
 col_h1, col_h2, col_h3 = st.columns([0.5, 0.25, 0.25])
 
@@ -310,27 +285,80 @@ with col_h1:
     active_data["title"] = new_title
 
 with col_h2:
-    with st.popover("🧠 Memory"):
-        st.subheader("Memori Sesi Ini")
+    if st.button("🧠 Editable Memory", use_container_width=True):
+        st.session_state.active_panel = "memory" if st.session_state.active_panel != "memory" else None
+
+with col_h3:
+    if st.button("📁 Media Library", use_container_width=True):
+        st.session_state.active_panel = "media" if st.session_state.active_panel != "media" else None
+
+# ==========================================
+# 7. PANEL MODAL AKTIF (TRANSPARAN FULL)
+# ==========================================
+if st.session_state.active_panel == "memory":
+    with st.container():
+        st.markdown('<div class="main-editor-card">', unsafe_allow_html=True)
+        st.subheader("🧠 Editable Memory")
         mem_text = st.text_area("Kelola fakta & preferensi memori:", value="\n".join(active_data["memory"]))
         if st.button("Simpan Memori"):
             active_data["memory"] = [m.strip() for m in mem_text.split("\n") if m.strip()]
             st.success("Memori diperbarui!")
+            st.session_state.active_panel = None
+            st.rerun()
+        st.markdown('</div>', unsafe_allow_html=True)
 
-with col_h3:
-    with st.popover("📁 Media"):
-        st.subheader("Pustaka Media & File")
+elif st.session_state.active_panel == "media":
+    with st.container():
+        st.markdown('<div class="main-editor-card">', unsafe_allow_html=True)
+        st.subheader("📁 Media Library")
         uploaded = st.file_uploader("Unggah berkas", accept_multiple_files=True)
         if uploaded:
             for f in uploaded:
                 active_data["media"].append(f.name)
-            st.success("File ditambahkan ke pustaka!")
+            st.success("File ditambahkan!")
         if active_data["media"]:
             for m in active_data["media"]:
                 st.caption(f"📄 {m}")
+        st.markdown('</div>', unsafe_allow_html=True)
+
+elif st.session_state.active_panel == "search":
+    with st.container():
+        st.markdown('<div class="main-editor-card">', unsafe_allow_html=True)
+        st.subheader("🔍 Cari Dalam Semua")
+        search_query = st.text_input("Cari kata kunci...", key="global_search")
+        if search_query:
+            st.caption(f"Hasil pencarian: **{search_query}**")
+            for cid, c in st.session_state.chats.items():
+                if any(search_query.lower() in m["content"].lower() for m in c["messages"]):
+                    st.write(f"• [Obrolan] {c['title']}")
+            for did, d in st.session_state.diaries.items():
+                if search_query.lower() in d["content"].lower():
+                    st.write(f"• [Diary] {d['title']}")
+        st.markdown('</div>', unsafe_allow_html=True)
+
+elif st.session_state.active_panel == "glosarium":
+    with st.container():
+        st.markdown('<div class="main-editor-card">', unsafe_allow_html=True)
+        st.subheader("📚 Glosarium Istilah")
+        g_search = st.text_input("Cari Istilah...", key="g_search")
+        for k, v in st.session_state.glosarium.items():
+            if not g_search or g_search.lower() in k.lower() or g_search.lower() in v.lower():
+                st.markdown(f"**{k}**")
+                st.caption(v)
+        st.markdown('</div>', unsafe_allow_html=True)
+
+elif st.session_state.active_panel == "kinerja":
+    with st.container():
+        st.markdown('<div class="main-editor-card">', unsafe_allow_html=True)
+        st.subheader("⚡ Kinerja AI")
+        st.caption(status_sys)
+        st.metric("Total Master Tools", len(manifest_tools))
+        st.metric("Latensi Sistem", "12 ms")
+        st.metric("Status GPU", "Tesla T4 Ready")
+        st.markdown('</div>', unsafe_allow_html=True)
 
 # ==========================================
-# 7. TAMPILAN UTAMA DIARY & PROJECT
+# 8. TAMPILAN UTAMA DIARY & PROJECT
 # ==========================================
 if current_view in ["diary", "project"]:
     st.markdown('<div class="main-editor-card">', unsafe_allow_html=True)
@@ -345,11 +373,14 @@ if current_view in ["diary", "project"]:
     active_data["content"] = content_input
     st.markdown('</div>', unsafe_allow_html=True)
 
-    with st.popover("🤖 Asisten AI"):
+    if st.button("🤖 Perintah & Riwayat Asisten AI", use_container_width=True):
+        st.session_state.active_panel = "ai" if st.session_state.active_panel != "ai" else None
+
+    if st.session_state.active_panel == "ai":
         st.info("Ajukan perintah ke AI untuk membantu mengedit, merangkum, atau menganalisis catatan di atas.")
 
 # ==========================================
-# 8. PANEL INPUT PERINTAH & MODE EKSPLORASI
+# 9. PANEL INPUT PERINTAH & MODE EKSPLORASI
 # ==========================================
 col_mode, col_add = st.columns([0.7, 0.3])
 with col_mode:
@@ -372,16 +403,22 @@ if user_prompt := st.chat_input("Kirim perintah atau pertanyaan ke AI Kopilot...
         st.write(f"*(Mode: {mode})* Memproses instruksi dengan 352 Master Tools...")
         
         with st.container():
+            st.markdown('<div class="ai-box">', unsafe_allow_html=True)
             st.markdown("**Opsi 1: Jawaban Langsung & Praktis**")
             st.write(f"Berikut adalah ringkasan solusi untuk: *{user_prompt}*")
+            st.markdown('</div>', unsafe_allow_html=True)
 
         with st.container():
+            st.markdown('<div class="ai-box">', unsafe_allow_html=True)
             st.markdown("**Opsi 2: Analisis Sistemik & Mendalam**")
             st.write(f"Menganalisis keterkaitan elemen-elemen dari perspektif *{mode}*.")
+            st.markdown('</div>', unsafe_allow_html=True)
 
         with st.container():
+            st.markdown('<div class="ai-box">', unsafe_allow_html=True)
             st.markdown("**Opsi 3: Metodologi & Tindakan Lanjutan**")
             st.write("Langkah-langkah strategis berbasis kerangka kerja dan registri tool.")
+            st.markdown('</div>', unsafe_allow_html=True)
             
         full_response = f"[Respon Terstruktur Tiga Opsi untuk: {user_prompt}]"
         active_data["messages"].append({"role": "assistant", "content": full_response})
